@@ -1,0 +1,36 @@
+---
+- name: Perform Ping, Copy httpd.conf, and Manage Variables
+  hosts: all
+  tasks:
+    - name: Ping all servers and save results
+      ping:
+      register: ping_result
+    - name: Save ping output to file
+      copy:
+        content: "{{ ping_result.stdout }}"
+        dest: ping-output.txt
+
+    - name: Copy httpd.conf to /tmp/
+      copy:
+        src: /path/to/httpd.conf
+        dest: /tmp/httpd.conf
+      tags: push
+
+    - name: Set variable 'stype' for 192.168.1.99 server
+      set_fact:
+        stype: jump
+      when: ansible_host == '192.168.1.99'
+
+    - name: Set variable 'stype' for 127.0.0.1 server
+      set_fact:
+        stype: local
+      when: ansible_host == '127.0.0.1'
+
+    - name: Print 'stype' variable for each node
+      debug:
+        msg: "stype value for {{ ansible_host }}: {{ stype }}"
+
+    - name: Tar /tmp/ directory when 'stype=service'
+      command: tar -czf /tmp/tmp_backup.tar.gz /tmp/
+      when: stype == 'service'
+
